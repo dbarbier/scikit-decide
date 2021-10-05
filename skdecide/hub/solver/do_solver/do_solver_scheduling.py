@@ -63,9 +63,10 @@ def build_solver(solving_method: SolvingMethod, do_domain):
                                  SolvingMethod.LNS_LP: "lns-lp",
                                  SolvingMethod.LNS_CP: "lns-cp",
                                  SolvingMethod.LNS_CP_CALENDAR: "lns-cp-calendar"}
-        print([(av, solvers_map[av]) for av in available])
+
         smap = [(av, solvers_map[av]) for av in available
                 if solvers_map[av][0] == solving_method_to_str[solving_method]]
+
         if len(smap) > 0:
             return smap[0]
 
@@ -142,7 +143,7 @@ class DOSolver(Solver, DeterministicPolicies):
             from skdecide.discrete_optimization.rcpsp.rcpsp_solvers import look_for_solver, solvers_map
             available = look_for_solver(do_domain)
         smap = [(av, solvers_map[av]) for av in available]
-        print("available solvers :", smap)
+
         return smap
 
     def _solve_domain(self, domain_factory: Callable[[], D]) -> None:
@@ -163,9 +164,9 @@ class DOSolver(Solver, DeterministicPolicies):
         result_storage = self.solver.solve(**self.dict_params)
         best_solution: RCPSPSolution = result_storage.get_best_solution()
         fits = self.do_domain.evaluate(best_solution)
-        print("Best solution fitness found : ", fits)
+
         self.best_solution = best_solution
-        print("Satisfiable ", self.do_domain.satisfy(self.best_solution))
+
         self.policy_object = from_solution_to_policy(solution=best_solution,
                                                      domain=self.domain,
                                                      policy_method_params=self.policy_method_params)
@@ -183,5 +184,3 @@ class DOSolver(Solver, DeterministicPolicies):
 
     def _is_policy_defined_for(self, observation: D.T_agent[D.T_observation]) -> bool:
         return self.policy_object.is_policy_defined_for(observation=observation)
-
-
