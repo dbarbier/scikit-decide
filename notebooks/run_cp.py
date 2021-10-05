@@ -11,14 +11,19 @@ def solve_lns(sm_file:str):
     domain: RCPSP = load_domain(sm_file)
     domain.set_inplace_environment(False)
     state = domain.get_initial_state()
+
     params_cp = ParametersCP.default()
-    params_cp.TimeLimit = 200
-    dict_params = {"parameters_cp": params_cp, "max_time_seconds": 500, "verbose": False}
-    solver = DOSolver(policy_method_params=PolicyMethodParams(base_policy_method=BasePolicyMethod.FOLLOW_GANTT, delta_index_freedom=0, delta_time_freedom=0),
+    params_cp.TimeLimit = 300
+    dict_params = {"parameters_cp": params_cp, "max_time_seconds": 300, "verbose": False}
+
+    policy_method_params = PolicyMethodParams(base_policy_method=BasePolicyMethod.FOLLOW_GANTT, delta_index_freedom=0, delta_time_freedom=0)
+
+    solver = DOSolver(policy_method_params=policy_method_params,
                       method=SolvingMethod.LNS_CP,
                       dict_params=dict_params)
 
-    solver.get_available_methods(domain)
+    possible_solvers = solver.get_available_methods(domain)
+    print(f"Possible solvers: {possible_solvers}")
 
     tic = time.perf_counter()
     solver.solve(domain_factory=lambda: domain)
@@ -40,14 +45,22 @@ def solve_lns(sm_file:str):
 
 def solve_cp(sm_file:str):
     domain: RCPSP = load_domain(sm_file)
+
     domain.set_inplace_environment(False)
+
     state = domain.get_initial_state()
     params_cp = ParametersCP.default()
-    params_cp.TimeLimit = 500
-    solver = DOSolver(policy_method_params=PolicyMethodParams(base_policy_method=BasePolicyMethod.FOLLOW_GANTT, delta_index_freedom=0, delta_time_freedom=0),
+    params_cp.TimeLimit = 200
+    dict_params = {"parameters_cp": params_cp, "max_time_seconds": 200, "verbose": False}
+
+    policy_method_params = PolicyMethodParams(base_policy_method=BasePolicyMethod.FOLLOW_GANTT, delta_index_freedom=0, delta_time_freedom=0)
+
+    solver = DOSolver(policy_method_params=policy_method_params,
                       method=SolvingMethod.CP,
-                      dict_params={"parameters_cp": params_cp, "output_type": True, "verbose": False})
-    solver.get_available_methods(domain)
+                      dict_params=dict_params)
+
+    possible_solvers = solver.get_available_methods(domain)
+    print(f"Possible solvers: {possible_solvers}")
 
     tic = time.perf_counter()
     solver.solve(domain_factory=lambda: domain)
@@ -75,28 +88,6 @@ def main():
 
     solve_lns(args.sm_file)
 
-def solve():
-    """Solve j301_1 with CP (MiniZinc)"""
-    big_domain: RCPSP = load_domain(sm_file)
-    big_domain.set_inplace_environment(False)
-
-    state = big_domain.get_initial_state()
-
-    # base_policy_method=BasePolicyMethod.FOLLOW_GANTT
-    base_policy_method=BasePolicyMethod.SGS_PRECEDENCE
-
-    policy_method_params = PolicyMethodParams(base_policy_method=base_policy_method, delta_index_freedom=0, delta_time_freedom=0)
-
-    # We want to focus on CP and LNS_CP
-    method = SolvingMethod.CP
-    # method = SolvingMethod.LNS_CP
-
-    solver = DOSolver(policy_method_params=policy_method_params, method=method, dict_params={"verbose": False})
-
-    tic = time.perf_counter()
-    solver.solve(domain_factory=lambda: big_domain)
-    toc = time.perf_counter()
-    print(f"Time: {toc - tic:0.4f} seconds")
 
 if __name__ == "__main__":
     main()
