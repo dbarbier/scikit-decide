@@ -87,6 +87,16 @@ class Maze:
         # corresponding maze string
         return Maze(maze_array=np.array(maze))
 
+    @staticmethod
+    def generate_empty_maze(width: int, height: int) -> "Maze":
+        """Generate an empty maze string with given width and height."""
+        maze = np.ones((height, width), dtype=np.int8)
+        maze[:, 0] = 0
+        maze[:, -1] = 0
+        maze[0, :] = 0
+        maze[-1, :] = 0
+        return Maze(maze_array=maze)
+
     def get_image_data(
         self,
         current_position: Optional[Tuple[int, int]] = None,
