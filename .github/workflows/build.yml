@@ -357,8 +357,8 @@ jobs:
       - init
     strategy:
       matrix:
-        os: ${{ fromJSON(needs.outputs.test_windows) }}
-        python-version: ${{ fromJSON(needs.outputs.python_versions) }}
+        os: ${{ fromJSON(needs.init.outputs.test_windows) }}
+        python-version: ${{ fromJSON(needs.init.outputs.python_versions) }}
       fail-fast: true
     defaults:
       run:
