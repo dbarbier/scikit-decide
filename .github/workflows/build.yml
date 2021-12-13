@@ -26,18 +26,63 @@ jobs:
       python_version: ${{ steps.generate-matrix.outputs.python_version }}
       build: ${{ steps.generate-matrix.outputs.build}}
       test: ${{ steps.generate-matrix.outputs.test}}
+      do_macos: ${{ steps.generate-matrix.outputs.do_macos}}
+      do_ubuntu: ${{ steps.generate-matrix.outputs.do_ubuntu}}
+      do_windows: ${{ steps.generate-matrix.outputs.do_windows}}
+      build_doc: ${{ steps.generate-matrix.outputs.build_doc}}
     steps:
       - uses: actions/setup-python@v2
       - name: Generate Matrix
         id: generate-matrix
         shell: python3 {0}
         run: |
+          # Default variables
           python_version = ["3.7", "3.8", "3.9"]
-          build = { "macos": ["macos-10.15"], "linux": ["ubuntu-latest"], "windows": ["windows-2016"] }
-          test = { "macos": ["macos-10.15", "macos-11"], "linux": ["ubuntu-18.04", "ubuntu-20.04"], "windows": ["windows-2016", "windows-2019", "windows-2022"] }
+          build = [ "macos-10.15", "ubuntu-18.04", "windows-2016" ]
+          test = [ "macos-10.15", "macos-11", "ubuntu-18.04", "ubuntu-20.04", "windows-2016", "windows-2019" ]
+          build_doc = "true"
+
+          if "${{ github.event_name }}" != "schedule":
+              to_bool = lambda s: True if s == "true" else False
+              python_filter = {
+                  '3.7' : to_bool("${{ contains(github.event.head_commit.message, '[ci: python-3.7]') }}"),
+                  '3.8' : to_bool("${{ contains(github.event.head_commit.message, '[ci: python-3.8]') }}"),
+                  '3.9' : to_bool("${{ contains(github.event.head_commit.message, '[ci: python-3.9]') }}"),
+              }
+              if any(python_filter.values()):
+                  python_version = [v for v in python_version if python_filter[v]]
+              os_filter = {
+                  'macos-10.15'  : to_bool("${{ contains(github.event.head_commit.message, '[ci: macos-10.15]') }}"),
+                  'macos-11'     : to_bool("${{ contains(github.event.head_commit.message, '[ci: macos-11]') }}"),
+                  'ubuntu-18.04' : to_bool("${{ contains(github.event.head_commit.message, '[ci: ubuntu-18.04]') }}"),
+                  'ubuntu-20.04' : to_bool("${{ contains(github.event.head_commit.message, '[ci: ubuntu-20.04]') }}"),
+                  'windows-2016' : to_bool("${{ contains(github.event.head_commit.message, '[ci: windows-2016]') }}"),
+                  'windows-2019' : to_bool("${{ contains(github.event.head_commit.message, '[ci: windows-2019]') }}"),
+              }
+              if set(os_filter.keys()) != set(test):
+                  raise Exception("test and os_filter do not contain the same keys")
+              if "${{ contains(github.event.head_commit.message, '[ci: windows]') }}" == "true":
+                  os_filter.update({k: True for k in os_filter if k.startswith("windows")})
+              if "${{ contains(github.event.head_commit.message, '[ci: macos]') }}" == "true":
+                  os_filter.update({k: True for k in os_filter if k.startswith("macos")})
+              if "${{ contains(github.event.head_commit.message, '[ci: ubuntu]') }}" == "true":
+                  os_filter.update({k: True for k in os_filter if k.startswith("ubuntu")})
+              # If there is no keyword, proceed as if all were present
+              if not any(os_filter.values()):
+                  os_filter.update({k: True for k in os_filter})
+              test = [ v for v in test if os_filter[v]]
+              test_os = { v.split('-')[0] for v in test }
+              build = [ v for v in build if v.split('-')[0] in test_os ]
+              if "${{ contains(github.event.head_commit.message, '[ci: skip-doc]') }}" == "true" or "ubuntu-latest" not in build:
+                  build_doc = "false"
+          oses = ["macos", "ubuntu", "windows"]
+          build_dict = {os : [k for k in build if k.startswith(os)] for os in oses}
+          print(f"::set-output name=build::{build_dict}")
+          print(f"::set-output name=test::{dict({os : [k for k in test if k.startswith(os)] for os in oses})}")
+          print(f"::set-output name=build_doc::{build_doc}")
+          for os in oses:
+              print(f"::set-output name=do_{os}::{'true' if len(build_dict[os]) > 0 else 'false'}")
           print(f"::set-output name=python_version::{python_version}")
-          print(f"::set-output name=build::{build}")
-          print(f"::set-output name=test::{test}")
 
   lint-sources:
     runs-on: ubuntu-latest
@@ -51,6 +96,7 @@ jobs:
   build-windows:
     needs:
       - setup
+    if: needs.setup.outputs.do_windows == 'true'
     strategy:
       matrix:
         os: ${{ fromJSON(needs.setup.outputs.build).windows }}
@@ -130,6 +176,7 @@ jobs:
   build-macos:
     needs:
       - setup
+    if: needs.setup.outputs.do_macos == 'true'
     strategy:
       matrix:
         os: ${{ fromJSON(needs.setup.outputs.build).macos }}
@@ -220,12 +267,13 @@ jobs:
           name: wheels
           path: dist/*.whl
 
-  build-linux:
+  build-ubuntu:
     needs:
       - setup
+    if: needs.setup.outputs.do_ubuntu == 'true'
     strategy:
       matrix:
-        os: ${{ fromJSON(needs.setup.outputs.build).linux }}
+        os: ${{ fromJSON(needs.setup.outputs.build).ubuntu }}
         python-version: ${{ fromJSON(needs.setup.outputs.python_version) }}
       fail-fast: false
     defaults:
@@ -406,13 +454,13 @@ jobs:
           pytest -v -s tests/solvers/python
           pytest -v -s tests/scheduling
 
-  test-linux:
+  test-ubuntu:
     needs:
-      - build-linux
+      - build-ubuntu
       - setup
     strategy:
       matrix:
-        os: ${{ fromJSON(needs.setup.outputs.test).linux }}
+        os: ${{ fromJSON(needs.setup.outputs.test).ubuntu }}
         python-version: ${{ fromJSON(needs.setup.outputs.python_version) }}
       fail-fast: true
     runs-on: ${{ matrix.os }}
@@ -443,8 +491,12 @@ jobs:
           pytest -v -s tests/solvers/python
           pytest -v -s tests/scheduling
 
-  build-docs:
-    needs: [test-linux, test-macos, test-windows]
+  build-doc:
+    needs:
+      - test-ubuntu
+      - test-macos
+      - test-windows
+    if: needs.setup.outputs.build_doc == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -517,7 +569,10 @@ jobs:
 
   upload-nightly:
     if: (github.ref == 'refs/heads/master') && (github.repository == 'airbus/scikit-decide') && (github.event_name == 'schedule')
-    needs: [test-linux, test-macos, test-windows]
+    needs:
+      - test-ubuntu
+      - test-macos
+      - test-windows
     runs-on: ubuntu-latest
 
     steps:
