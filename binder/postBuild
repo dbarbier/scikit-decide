@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# Stops if an error occurs
-set -e
-
-# There are no GPUs on binders, get a bare minimal torch release for CPU only
-pip install torch==1.10.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-
-pip install scikit-decide==0.9.3
