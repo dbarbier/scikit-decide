@@ -36,7 +36,6 @@ jobs:
         id: generate-matrix
         shell: python3 {0}
         run: |
-          # Default variables
           python_version = ["3.7", "3.8", "3.9"]
           build = [ "macos-10.15", "ubuntu-latest", "windows-2016" ]
           test = [ "macos-10.15", "macos-11", "ubuntu-18.04", "ubuntu-20.04", "windows-2016", "windows-2019", "windows-2022"]
@@ -484,7 +483,7 @@ jobs:
           pytest -v -s tests/scheduling
 
   build-doc:
-    needs: [test-ubuntu, test-macos, test-windows]
+    needs: [test-ubuntu]
     if: needs.setup.outputs.build_doc == 'true'
     strategy:
       matrix:
@@ -547,6 +546,32 @@ jobs:
 
       - name: Deploy documentation in root folder on GH pages 🚀
         if: github.ref == 'refs/heads/master'
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: docs/.vuepress/dist # The folder the action should deploy.
+          target-folder: / # The folder the action should deploy to.
+          commit-message: publish documentation
+          clean-exclude: |
+            "version/*"
+
+  upload-doc:
+    needs: [build-doc, test-windows, test-macos]
+    if: needs.setup.outputs.build_doc == 'true' && github.ref == 'refs/heads/master'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.7"]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: doc
+
+      - name: Deploy documentation in root folder on GH pages 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.5
         with:
           branch: gh-pages # The branch the action should deploy to.
