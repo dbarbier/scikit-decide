@@ -38,8 +38,8 @@ jobs:
         run: |
           # Default variables
           python_version = ["3.7", "3.8", "3.9"]
-          build = [ "macos-10.15", "ubuntu-18.04", "windows-2016" ]
-          test = [ "macos-10.15", "macos-11", "ubuntu-18.04", "ubuntu-20.04", "windows-2016", "windows-2019" ]
+          build = [ "macos-10.15", "ubuntu-latest", "windows-2016" ]
+          test = [ "macos-10.15", "macos-11", "ubuntu-18.04", "ubuntu-20.04", "windows-2016", "windows-2019", "windows-2022"]
           build_doc = "true"
 
           if "${{ github.event_name }}" != "schedule":
@@ -94,8 +94,7 @@ jobs:
       - uses: pre-commit/action@v2.0.0
 
   build-windows:
-    needs:
-      - setup
+    needs: [setup]
     if: needs.setup.outputs.do_windows == 'true'
     strategy:
       matrix:
@@ -174,8 +173,7 @@ jobs:
           path: dist/*.whl
 
   build-macos:
-    needs:
-      - setup
+    needs: [setup]
     if: needs.setup.outputs.do_macos == 'true'
     strategy:
       matrix:
@@ -268,8 +266,7 @@ jobs:
           path: dist/*.whl
 
   build-ubuntu:
-    needs:
-      - setup
+    needs: [setup]
     if: needs.setup.outputs.do_ubuntu == 'true'
     strategy:
       matrix:
@@ -374,9 +371,7 @@ jobs:
           path: dist/*.whl
 
   test-windows:
-    needs:
-      - build-windows
-      - setup
+    needs: [build-windows, setup]
     strategy:
       matrix:
         os: ${{ fromJSON(needs.setup.outputs.test).windows }}
@@ -414,9 +409,7 @@ jobs:
           pytest -v -s tests/scheduling
 
   test-macos:
-    needs:
-      - build-macos
-      - setup
+    needs: [build-macos, setup]
     strategy:
       matrix:
         os: ${{ fromJSON(needs.setup.outputs.test).macos }}
@@ -455,9 +448,7 @@ jobs:
           pytest -v -s tests/scheduling
 
   test-ubuntu:
-    needs:
-      - build-ubuntu
-      - setup
+    needs: [build-ubuntu, setup]
     strategy:
       matrix:
         os: ${{ fromJSON(needs.setup.outputs.test).ubuntu }}
@@ -492,10 +483,7 @@ jobs:
           pytest -v -s tests/scheduling
 
   build-doc:
-    needs:
-      - test-ubuntu
-      - test-macos
-      - test-windows
+    needs: [test-ubuntu, test-macos, test-windows]
     if: needs.setup.outputs.build_doc == 'true'
     strategy:
       matrix:
@@ -569,10 +557,7 @@ jobs:
 
   upload-nightly:
     if: (github.ref == 'refs/heads/master') && (github.repository == 'airbus/scikit-decide') && (github.event_name == 'schedule')
-    needs:
-      - test-ubuntu
-      - test-macos
-      - test-windows
+    needs: [test-ubuntu, test-macos, test-windows]
     runs-on: ubuntu-latest
 
     steps:
