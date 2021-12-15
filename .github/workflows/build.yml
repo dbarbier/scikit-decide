@@ -536,6 +536,7 @@ jobs:
           pip install --pre --find-links ./wheels/ "scikit-decide[all]"
 
       - name: generate documentation
+        if: needs.setup.outputs.build_doc == 'true'
         run: yarn global add vuepress && yarn install && yarn docs:build && touch docs/.vuepress/dist/.nojekyll
 
       - name: upload as artifact
