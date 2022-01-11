@@ -568,9 +568,7 @@ SK_RIW_SOLVER_CLASS::Node::Key::operator()(const Node &n) const {
 SK_RIW_SOLVER_TEMPLATE_DECL
 SK_RIW_SOLVER_CLASS::WidthSolver::WidthSolver(
     RIWSolver &parent_solver, Domain &domain,
-    const std::function<std::unique_ptr<FeatureVector>(
-        Domain &d, const State &s, const std::size_t *thread_id)>
-        &state_features,
+    const StateFeatureFunctor &state_features,
     const atomic_size_t &time_budget, const atomic_size_t &rollout_budget,
     const atomic_size_t &max_depth, const atomic_double &exploration,
     const atomic_size_t &epsilon_moving_average_window,
