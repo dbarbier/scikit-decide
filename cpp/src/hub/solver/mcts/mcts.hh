@@ -101,7 +101,7 @@ public:
           [](typename Tsolver::Domain &domain,
              const typename Tsolver::Domain::State &state,
              const std::size_t *thread_id) {
-            return std::make_pair(HeuristicFunctor::result_type::first_type(), 0);
+            return std::make_pair(typename HeuristicFunctor::result_type::first_type(), 0);
           });
 
   FullExpand(const FullExpand &other);
