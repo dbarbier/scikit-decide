@@ -18,6 +18,10 @@ IF (NOT WIN32 AND NOT CYGWIN)
     SET(CMAKE_CXX_FLAGS "-fvisibility=hidden -fvisibility-inlines-hidden ${CMAKE_CXX_FLAGS}")
 ENDIF ()
 
+IF (MSVC)
+    ADD_COMPILE_OPTIONS(/MP /Zc:lambda)
+ENDIF ()
+
 SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 INCLUDE(GenerateTemplateInstantiationFiles)
 
