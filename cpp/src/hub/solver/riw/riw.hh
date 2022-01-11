@@ -220,7 +220,7 @@ private:
         atomic_size_t;
     typedef typename ExecutionPolicy::template atomic<double> atomic_double;
     typedef typename ExecutionPolicy::template atomic<bool> atomic_bool;
-  
+
   public:
     WidthSolver(
         RIWSolver &parent_solver, Domain &domain,
