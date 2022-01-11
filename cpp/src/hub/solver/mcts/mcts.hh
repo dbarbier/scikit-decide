@@ -97,11 +97,17 @@ public:
       HeuristicFunctor;
 
   FullExpand(
-      const HeuristicFunctor &heuristic = 
+      const HeuristicFunctor &heuristic =
           [](typename Tsolver::Domain &domain,
              const typename Tsolver::Domain::State &state,
              const std::size_t *thread_id) {
-            return std::make_pair(typename HeuristicFunctor::result_type::first_type(), 0);
+            // MSVC versions earlier than 2019 cannot catch Tsolver::Domain::Value inside the lambda
+            // function but can only catch types through FullExpand<Tsolver>
+            // thus we must get the state value type from
+            // FullExpand<Tsolver>::HeuristicFunctor
+            typedef typename FullExpand<
+                Tsolver>::HeuristicFunctor::result_type::first_type StateValue;
+            return std::make_pair(StateValue(), 0);
           });
 
   FullExpand(const FullExpand &other);
